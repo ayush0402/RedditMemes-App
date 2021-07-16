@@ -1,24 +1,29 @@
 package com.example.redditmemes
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
 import com.example.redditmemes.databinding.FragmentMemeBinding
-import com.google.android.material.snackbar.Snackbar
 
 
 class MemeFragment : Fragment() {
 
-    var urlImage: String? = null
+    //connecting the MemeViewModel (Creating the viewModel variable)
+    private lateinit var viewModel: MemeViewModel
+
+
+
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -29,11 +34,14 @@ class MemeFragment : Fragment() {
             R.layout.fragment_meme, container, false
         )
 
+        //Calling the MemeViewModel via ViewModelProvider
+        Log.i("MemeFragment","Called ViewModelProviders")
+        viewModel = ViewModelProvider(this).get(MemeViewModel::class.java)
 
         loadMeme(binding)
 
         binding.btnNext.setOnClickListener { loadMeme(binding) }
-        binding.btnShare.setOnClickListener { shareMeme(urlImage) }
+        binding.btnShare.setOnClickListener { shareMeme(viewModel.urlImage) }
 
 
         return binding.root
@@ -41,6 +49,8 @@ class MemeFragment : Fragment() {
 
 
     private fun loadMeme(binding: FragmentMemeBinding) {
+
+        Log.i("MemeFragment","loadMeme function called")
 
         binding.loading.visibility = View.VISIBLE
 
@@ -52,19 +62,19 @@ class MemeFragment : Fragment() {
         val jsonObjectRequest = JsonObjectRequest(
             Request.Method.GET, url, null,
             { response ->
-                urlImage = response.getString("url")
-                val title = response.getString("title")
-                val upvotes = response.getString("ups")
+                viewModel.urlImage = response.getString("url")
+                viewModel.title = response.getString("title")
+                viewModel.upvotes = response.getString("ups")
 
-                binding.titleview.text = title
-                binding.upvotecount.text = upvotes
+                binding.titleview.text = viewModel.title
+                binding.upvotecount.text = viewModel.upvotes
 
-                Glide.with(this).load(urlImage).into(binding.memeImageView)
+                Glide.with(this).load(viewModel.urlImage).into(binding.memeImageView)
 
                 binding.loading.visibility = View.INVISIBLE
             },
             {
-                showSnackBar("Connection Error", activity)
+                viewModel.showSnackBar("Connection Error", activity)
             })
 
         // Add the request to the RequestQueue.
@@ -72,8 +82,11 @@ class MemeFragment : Fragment() {
 
     }
 
-
     private fun shareMeme(urlImage: String?) {
+
+        Log.i("MemeFragment","shareMeme function called")
+
+
         val sendIntent: Intent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_TEXT, "Sent via RedditMeme-App: $urlImage")
@@ -84,14 +97,10 @@ class MemeFragment : Fragment() {
         startActivity(shareIntent)
     }
 
-    private fun showSnackBar(message: String?, activity: Activity?) {
-        if (null != activity && null != message) {
-            Snackbar.make(
-                activity.findViewById(android.R.id.content),
-                message, Snackbar.LENGTH_SHORT
-            ).show()
-        }
-    }
+
+
+
+
 
 
 }
